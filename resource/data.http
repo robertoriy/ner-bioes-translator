@@ -1,0 +1,11 @@
+### Сделать запрос на перевод данных
+POST http://localhost:8000/api/v1/dataset/translation?language=ru&language=en&language=kk&from_sentence=5&to_sentence=6
+
+### Скачать итоговый файл с разметкой
+GET http://localhost:8000/api/v1/dataset/excel
+
+### Получить все переведенные предложения в формате json
+GET http://localhost:8000/api/v1/dataset/
+
+### Получить данные в формате json по конкретному предложению
+GET http://localhost:8000/api/v1/dataset/6

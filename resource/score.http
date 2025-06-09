@@ -1,0 +1,13 @@
+### Получить статистику по всем переводам и по каждому языку
+GET http://localhost:8000/api/v1/scores
+Content-Type: application/json
+
+### Оценить предлоежние ( "correct", "incorrect", "not_evaluated" )
+POST http://localhost:8000/api/v1/scores/9
+Content-Type: application/json
+
+{
+  "language_code": "en",
+  "evaluation_score": "incorrect"
+
+}
