@@ -4,17 +4,17 @@ from app.schemas.config.service_config import ServiceConfig
 from config import settings
 
 
-class TranslatorService:
+class BioesTranslationService:
     def __init__(self):
         self._client = OpenAI(
             api_key=settings.API_KEY,
             base_url=settings.BASE_URL,
         )
 
-    def translate(self, language, config: ServiceConfig, sentence_bioes):
+    def translate(self, sentence_bioes: str, language: str, config: ServiceConfig):
         prompt_config = config.prompt_data
         task = prompt_config.task
-        role, answer = prompt_config.get_role_and_answer(language)
+        role, answer = prompt_config.get_bioes_role_and_answer(language)
 
         chat_completion = self._client.chat.completions.create(
         model=config.model,
@@ -43,4 +43,4 @@ class TranslatorService:
         print(f"Обработка запроса {sentence_bioes} | \nперевод - {result}")
         return result
 
-translator = TranslatorService()
+bioes_translator = BioesTranslationService()

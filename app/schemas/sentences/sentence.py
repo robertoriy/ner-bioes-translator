@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 
-from app.schemas.sentences.sentence_detail import SentenceDetail
+from app.schemas.sentences.sentence_detail_base import SentenceDetailBase
+from app.schemas.sentences.sentence_detail_translated import SentenceDetailTranslated
 
 
 class Sentence(BaseModel):
     id: int
-    original_sentence: SentenceDetail
-    translated_sentence: list[SentenceDetail]
+    original_sentence: SentenceDetailBase
+    translated_sentence: list[SentenceDetailTranslated]

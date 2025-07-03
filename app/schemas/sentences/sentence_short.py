@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
-from app.schemas.scores.sentence_score import SentenceScore
+from app.schemas.evaluations.back_translation_data import BackTranslationData
+from app.schemas.evaluations.expert_evaluation import ExpertEvaluation
 
 
 class SentenceShort(BaseModel):
     id: int
     original_sentence: str
-    evaluation_score: list[SentenceScore]
+    expert_evaluation: list[ExpertEvaluation]
+    back_translation_evaluation: list[BackTranslationData]

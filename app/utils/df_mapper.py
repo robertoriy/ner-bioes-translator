@@ -3,28 +3,32 @@ from typing import Dict
 import pandas as pd
 
 from app.dependencies.dependencies import get_config_handler
-from app.schemas.config.language import Language
-from app.schemas.scores.score_values import ScoreValues
-from app.schemas.scores.sentence_score import SentenceScore
+from app.schemas.evaluations.back_translation_data import BackTranslationData
+from app.schemas.evaluations.back_translation_evaluation import BackTranslationEvaluation
+from app.schemas.evaluations.expert_evaluation_values import ExpertEvaluationValues
+from app.schemas.evaluations.expert_evaluation import ExpertEvaluation
 from app.schemas.sentences.bioes_tag import BioesTag
 from app.schemas.sentences.plain_data import PlainData
 from app.schemas.sentences.sentence import Sentence
-from app.schemas.sentences.sentence_detail import SentenceDetail
+from app.schemas.sentences.sentence_detail_base import SentenceDetailBase
+from app.schemas.sentences.sentence_detail_translated import SentenceDetailTranslated
 from app.schemas.sentences.sentence_short import SentenceShort
-from app.services.evaluation_score_handler import scores
 
 
 class DataFrameMapper:
-    def __init__(self):
-        pass
 
     @classmethod
-    def df_to_sentences_json(cls, df: pd.DataFrame, scores: Dict[str, Dict[str, ScoreValues]]):
+    def df_to_sentences_json(
+            cls,
+            df: pd.DataFrame,
+            expert_evaluations: Dict[str, Dict[str, ExpertEvaluationValues]],
+            back_translation_evaluations: Dict[str, Dict[str, BackTranslationEvaluation]]
+    ):
         original_lang_code = get_config_handler().get_config().prompt_data.get_original_language()
         print("DF: ")
         print(df)
-        print("Scores: ")
-        print(scores)
+        print("Expert evaluations: ")
+        print(expert_evaluations)
 
         original_sentences = {
             int(sent.split()[1]): ' '.join(str(word) if word is not None else "" for word in words)
@@ -32,30 +36,50 @@ class DataFrameMapper:
         }
 
         result = []
-        for sentence_id, lang_scores in scores.items():
-            sentence_scores = [
-                SentenceScore(
+        # todo back_translation_evaluations
+        for sentence_id, lang_evaluation in expert_evaluations.items():
+            expert_evaluation = [
+                ExpertEvaluation(
                     language_code=lang,
-                    evaluation_score=score.value
+                    evaluation=evaluation.value
                 )
-                for lang, score in lang_scores.items()
+                for lang, evaluation in lang_evaluation.items()
+            ]
+
+            back_translation_evaluation = [
+                BackTranslationData(
+                    language_code=lang,
+                    back_translated_sentence=evaluation.back_translated_sentence,
+                    evaluation=evaluation.evaluation
+                )
+                for lang, evaluation in back_translation_evaluations.get(sentence_id, {}).items()
             ]
 
             sentence = SentenceShort(
                 id=int(sentence_id),
                 original_sentence=original_sentences.get(int(sentence_id)),
-                evaluation_score=sentence_scores
+                expert_evaluation=expert_evaluation,
+                back_translation_evaluation=back_translation_evaluation
             )
             result.append(sentence)
         return result
 
     @classmethod
-    def df_to_sentence_json(cls, df: pd.DataFrame, sentence_id: int, scores: Dict[str, Dict[str, ScoreValues]]):
+    def df_to_sentence_json(
+            cls,
+            df: pd.DataFrame,
+            sentence_id: int,
+            expert_evaluations: Dict[str, Dict[str, ExpertEvaluationValues]],
+            back_translation_evaluations: Dict[str, Dict[str, BackTranslationEvaluation]]
+    ):
         needed_df = df[df['Sentence'] == f"Sentence {sentence_id}"]
 
         original_lang_code = get_config_handler().get_config().prompt_data.get_original_language()
         code = f"original_{original_lang_code}"
-        original_sentence = cls.process_sentence(needed_df, sentence_id, code, scores)
+        original_sentence = cls.process_original_sentence(
+            needed_df,
+            code,
+        )
 
         translated_sentence = []
         languages = set()
@@ -64,8 +88,15 @@ class DataFrameMapper:
                 lang = col.split("_")[1]
                 languages.add(lang)
         for lang in languages:
-            translated_sentence.append(cls.process_sentence(needed_df, sentence_id, lang, scores))
-
+            translated_sentence.append(
+                cls.process_common_sentence(
+                    needed_df,
+                    sentence_id,
+                    lang,
+                    expert_evaluations,
+                    back_translation_evaluations
+                )
+            )
 
         return Sentence(
             id=sentence_id,
@@ -74,21 +105,15 @@ class DataFrameMapper:
         )
 
     @classmethod
-    def process_sentence(cls,
-                         df: pd.DataFrame,
-                         sentence_id: int,
-                         suffix: str,
-                         scores: Dict[str, Dict[str, ScoreValues]]
-                         ):
-        is_original = suffix.startswith('original')
-        bioes = list(zip(df[f'Word_{suffix}'], df[f'BIOES-Tag_{suffix}']))
-
+    def process_original_sentence(
+            cls,
+            df: pd.DataFrame,
+            suffix: str,
+    ):
         config = get_config_handler().get_config().prompt_data
-        if is_original:
-            language = config.get_extended_original_language()
-        else:
-            language = config.get_extended_language(suffix)
+        language = config.get_extended_original_language()
 
+        bioes = list(zip(df[f'Word_{suffix}'], df[f'BIOES-Tag_{suffix}']))
         full_sentence, content, named_entities = cls.parse_bioes(bioes)
 
         kwargs = {
@@ -97,9 +122,40 @@ class DataFrameMapper:
             "named_entity": named_entities,
             "content": content
         }
-        if not is_original:
-            kwargs["evaluation_score"] = scores[str(sentence_id)][suffix].value
-        return SentenceDetail(**kwargs)
+        return SentenceDetailBase(
+            language=language,
+            full_sentence=full_sentence,
+            named_entity=named_entities,
+            content=content
+        )
+
+    @classmethod
+    def process_common_sentence(
+            cls,
+            df: pd.DataFrame,
+            sentence_id: int,
+            suffix: str,
+            expert_evaluations: Dict[str, Dict[str, ExpertEvaluationValues]],
+            back_translation_evaluations: Dict[str, Dict[str, BackTranslationEvaluation]]
+    ):
+        config = get_config_handler().get_config().prompt_data
+        language = config.get_extended_language(suffix)
+
+        bioes = list(zip(df[f'Word_{suffix}'], df[f'BIOES-Tag_{suffix}']))
+
+        full_sentence, content, named_entities = cls.parse_bioes(bioes)
+
+        expert_evaluation = expert_evaluations[str(sentence_id)][suffix].value
+        back_translation_evaluation = back_translation_evaluations[str(sentence_id)][suffix]
+
+        return SentenceDetailTranslated(
+            language=language,
+            full_sentence=full_sentence,
+            named_entity=named_entities,
+            content=content,
+            expert_evaluation=expert_evaluation,
+            back_translation_evaluation=back_translation_evaluation
+        )
 
     @classmethod
     def parse_bioes(cls, bioes):
@@ -156,4 +212,3 @@ class DataFrameMapper:
         full_sentence = full_sentence.strip()
 
         return full_sentence, content, named_entity
-

@@ -1,0 +1,21 @@
+### Получить статистику по всем переводам и по каждому языку
+GET http://localhost:8000/api/v1/evaluations/expert
+Content-Type: application/json
+
+### Оценить предлоежние ( "correct", "incorrect", "not_evaluated" )
+POST http://localhost:8000/api/v1/evaluations/expert/6
+Content-Type: application/json
+
+{
+  "language_code": "ru",
+  "evaluation": "incorrect"
+
+}
+
+### Получить статистику по всем обратным переводам и по каждому языку
+GET http://localhost:8000/api/v1/evaluations/back_translations
+Content-Type: application/json
+
+### Сделать запрос на оценку обратных переводов
+POST http://localhost:8000/api/v1/evaluations/back_translations
+Content-Type: application/json

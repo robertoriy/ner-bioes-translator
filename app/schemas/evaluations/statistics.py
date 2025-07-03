@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.schemas.scores.language_statistics import LanguageStatistics
+from app.schemas.evaluations.language_statistics import LanguageStatistics
 
 
 class Statistics(BaseModel):

@@ -35,12 +35,22 @@ class PromptConfig(BaseModel):
                 return target.language
         raise LanguageNotFoundError
 
-    def get_role_and_answer(self, language_code: str) -> tuple[str, str]:
-        """Возвращает (role, answer) или вызывает исключение, если language_code не найден."""
+    def get_bioes_role_and_answer(self, language_code: str) -> tuple[str, str]:
+        """Возвращает (role, answer) для тэггирования или вызывает исключение, если language_code не найден."""
         target_data = None
         for target in self.target_data:
             if target.language.code == language_code:
                 target_data = target
         if not target_data:
             raise LanguageNotFoundError(f"Language code '{language_code}' not found in config")
-        return target_data.role, target_data.answer
+        return target_data.bioes_prompt.role, target_data.bioes_prompt.answer
+
+    def get_back_translation_role_and_task(self, language_code: str) -> tuple[str, str]:
+        """Возвращает (role, task) для обратного перевода или вызывает исключение, если language_code не найден."""
+        target_data = None
+        for target in self.target_data:
+            if target.language.code == language_code:
+                target_data = target
+        if not target_data:
+            raise LanguageNotFoundError(f"Language code '{language_code}' not found in config")
+        return target_data.back_translation_prompt.role, target_data.back_translation_prompt.task

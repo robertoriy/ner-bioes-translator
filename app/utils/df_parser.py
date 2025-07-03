@@ -29,4 +29,6 @@ class DataFrameParser:
 
         return result
 
-# df_parser = DataFrameParser()
+    @classmethod
+    def remove_unnecessary_tags(cls, sentence_bioes):
+        return sentence_bioes

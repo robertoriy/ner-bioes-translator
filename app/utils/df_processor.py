@@ -1,16 +1,14 @@
 import pandas as pd
 
-from app.dependencies.dependencies import get_translator, get_config_handler
-from app.services.df_parser import DataFrameParser
+from app.dependencies.dependencies import get_bioes_translator, get_config_handler
+from app.utils.df_parser import DataFrameParser
 
 class DataFrameProcessor:
-    def __init__(self):
-        pass
 
     @classmethod
     def get_translations(cls, sentence_data, languages):
         config = get_config_handler().get_config()
-        translator = get_translator()
+        translator = get_bioes_translator()
 
         translations = {lang: {} for lang in languages}
 
@@ -18,9 +16,11 @@ class DataFrameProcessor:
             original_sentence_bioes = DataFrameParser.parse_df_sentence_bioes(data)
 
             for language in languages:
-                translated_sentence = translator.translate(language, config, original_sentence_bioes)
+                translated_sentence = translator.translate(original_sentence_bioes, language, config)
 
-                processed_sentence_bioes = DataFrameParser.parse_tags_from_string(translated_sentence)
+                updated_translated_sentence = DataFrameParser.remove_unnecessary_tags(translated_sentence)
+
+                processed_sentence_bioes = DataFrameParser.parse_tags_from_string(updated_translated_sentence)
 
                 translations[language][sentence_name] = processed_sentence_bioes
 
@@ -43,44 +43,6 @@ class DataFrameProcessor:
             'Word': new_word_name,
             'BIOES-Tag': new_tag_name
         })
-
-
-        # # Создаем столбцы для каждого языка
-        # for lang in translations.keys():
-        #     result_df[f'Word_{lang}'] = np.nan
-        #     result_df[f'BIOES-Tag_{lang}'] = np.nan
-        #
-        # # Обрабатываем каждый язык
-        # for lang, lang_translations in translations.items():
-        #     # Проходим по всем предложениям
-        #     for sentence in result_df['Sentence'].unique():
-        #         sentence_indices = result_df[result_df['Sentence'] == sentence].index
-        #         current_translation = lang_translations.get(sentence, [])
-        #
-        #         # Добавляем недостающие строки (если перевод длиннее оригинала)
-        #         needed_rows = max(0, len(current_translation) - len(sentence_indices))
-        #         if needed_rows > 0:
-        #             insert_pos = sentence_indices[-1] + 1
-        #             new_rows = pd.DataFrame({
-        #                 'Sentence': [sentence] * needed_rows,
-        #                 new_word_name: [np.nan] * needed_rows,
-        #                 new_tag_name: [np.nan] * needed_rows
-        #             })
-        #             # Добавляем пустые столбцы для всех языков
-        #             for l in translations.keys():
-        #                 new_rows[f'Word_{l}'] = np.nan
-        #                 new_rows[f'BIOES-Tag_{l}'] = np.nan
-        #             result_df = pd.concat(
-        #                 [result_df.iloc[:insert_pos], new_rows, result_df.iloc[insert_pos:]]).reset_index(drop=True)
-        #
-        #         # Обновляем индексы
-        #         sentence_indices = result_df[result_df['Sentence'] == sentence].index
-        #
-        #         # Заполняем переводы для текущего языка
-        #         for i, (word, tag) in enumerate(current_translation):
-        #             if i < len(sentence_indices):
-        #                 result_df.at[sentence_indices[i], f'Word_{lang}'] = word
-        #                 result_df.at[sentence_indices[i], f'BIOES-Tag_{lang}'] = tag
         return cls.add_translations_ordered(filtered_df, translations, original_lang_code)
 
     @classmethod
