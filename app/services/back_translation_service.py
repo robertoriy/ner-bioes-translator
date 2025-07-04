@@ -51,6 +51,11 @@ class BackTranslationService:
     def translate(self, sentence: str, model: str, role: str, task: str):
         task = task + ' ' + sentence
 
+        print("\n-----------------")
+        print(f"Обработка запроса на обратный перевод:\n"
+              f"role - {role} | \n"
+              f"task - {task}")
+
         chat_completion = self._client.chat.completions.create(
             model=model,
             messages=[
@@ -67,7 +72,11 @@ class BackTranslationService:
         )
         print(chat_completion)
         result = chat_completion.choices[0].message.content
-        print(f"Обработка запроса {sentence} | \nперевод - {result}")
+
+        print(f"Результат обработки запроса на обратный перевод:\n"
+              f"result - {result}")
+        print("-----------------\n")
+
         return result
 
     def evaluate(self, original_sentence, back_translated_sentence):

@@ -16,9 +16,16 @@ class BioesTranslationService:
         task = prompt_config.task
         role, answer = prompt_config.get_bioes_role_and_answer(language)
 
+        print("\n-----------------")
+        print(f"Обработка запроса на перевод с сохранением разметки:\n"
+              f"role - {role} | \n"
+              f"example task - {task} | \n"
+              f"answer - {answer}| \n"
+              f"sentence to translate - {sentence_bioes}")
+
         chat_completion = self._client.chat.completions.create(
-        model=config.model,
-        messages=[
+            model=config.model,
+            messages=[
                 {
                     "role": "system",
                     "content": role
@@ -40,7 +47,12 @@ class BioesTranslationService:
         )
         print(chat_completion)
         result = chat_completion.choices[0].message.content
-        print(f"Обработка запроса {sentence_bioes} | \nперевод - {result}")
+
+        print(f"Результат обработки запроса на перевод с сохранением разметки:\n"
+              f"result - {result}")
+        print("-----------------\n")
+
         return result
+
 
 bioes_translator = BioesTranslationService()
