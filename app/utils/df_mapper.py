@@ -36,7 +36,6 @@ class DataFrameMapper:
         }
 
         result = []
-        # todo back_translation_evaluations
         for sentence_id, lang_evaluation in expert_evaluations.items():
             expert_evaluation = [
                 ExpertEvaluation(
