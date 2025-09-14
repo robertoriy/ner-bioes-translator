@@ -8,7 +8,7 @@ config_router = APIRouter(
 )
 
 @config_router.get("/config")
-async def get_current_config():
+async def get_current_config() -> ServiceConfig:
     config_handler = get_config_handler()
     try:
         current_config = config_handler.get_config()
@@ -24,7 +24,7 @@ async def get_current_config():
         )
 
 @config_router.post("/config")
-async def save_new_config(config: ServiceConfig):
+async def save_new_config(config: ServiceConfig) -> ServiceConfig:
     config_handler = get_config_handler()
     saved_config = config_handler.save_config(config)
     return saved_config
