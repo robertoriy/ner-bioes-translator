@@ -8,6 +8,8 @@ from app.dependencies.dependencies import get_df_handler, get_config_handler, \
     get_result_df_handler, get_expert_evaluations
 from app.handlers.back_translation_evaluation_handler import back_translation_evaluations
 from app.schemas.evaluations.expert_evaluation_values import ExpertEvaluationValues
+from app.schemas.sentences.sentence import Sentence
+from app.schemas.sentences.sentence_short import SentenceShort
 from app.utils.df_mapper import DataFrameMapper
 from app.utils.df_processor import DataFrameProcessor
 
@@ -35,7 +37,7 @@ async def download_excel():
 
 
 @data_router.get("/dataset")
-async def get_all_sentences_short():
+async def get_all_sentences_short() -> list[SentenceShort]:
     df = get_result_df_handler().get_dataframe().copy(deep=True)
     expert_evaluations = get_expert_evaluations().get_map_evaluations()
     return DataFrameMapper.df_to_sentences_json(
@@ -46,7 +48,7 @@ async def get_all_sentences_short():
 
 
 @data_router.get("/dataset/{sentence_id}")
-async def get_special_sentence(sentence_id: int):
+async def get_special_sentence(sentence_id: int) -> Sentence:
     df = get_result_df_handler().get_dataframe().copy(deep=True)
     expert_evaluations = get_expert_evaluations().get_map_evaluations()
     return DataFrameMapper.df_to_sentence_json(
